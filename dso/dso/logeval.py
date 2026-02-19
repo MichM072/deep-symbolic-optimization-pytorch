@@ -1,11 +1,12 @@
 """Tools to evaluate generated logfiles based on log directory."""
 
 import warnings
+from warnings import deprecated
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-from pkg_resources import resource_filename
+# from pkg_resources import resource_filename <-- Was this used? --- IGNORE ---
 import re
 import glob
 import os
@@ -171,7 +172,7 @@ class LogEval:
 
         # Compute PF across all runs
         if log_type == "pf":
-            log_df = self._apply_pareto_filter(log_df)
+            log_df = self._apply_pareto_filter_new(log_df)
             log_df = log_df.sort_values(by=["r", "complexity", "seed"], ascending=False)
 
         log_df = log_df.reset_index(drop=True)
@@ -179,6 +180,26 @@ class LogEval:
 
         return log_df
 
+    def _apply_pareto_filter_new(self, df):
+        """New implementation of pareto filter, sorts both complexity and reward and then iterates through the sorted DataFrame to filter the entries. This should improvie the speed of the pareto filter singificantly compared to iterrows."""
+        df = df.sort_values(by=["complexity", "r"], ascending=True)
+        r_values = df["r"].values
+        indices = df.index.values
+        filtered_indices = []
+        max_r = float("-inf")
+
+        for i in range(len(df)):
+            if r_values[i] > max_r:
+                filtered_indices.append(indices[i])
+                max_r = r_values[i]
+
+        filtered_df = df.loc[filtered_indices].reset_index(drop=True)
+
+        # make sure that filtered_df has the same column types as the original df
+        filtered_df = filtered_df.astype(df.dtypes.to_dict())
+        return filtered_df
+
+    @deprecated("This method contains a deprecated pandas method. Please use _apply_pareto_filter_new instead.")
     def _apply_pareto_filter(self, df):
         df = df.sort_values(by=["complexity"], ascending=True)
         df = df.reset_index(drop=True)

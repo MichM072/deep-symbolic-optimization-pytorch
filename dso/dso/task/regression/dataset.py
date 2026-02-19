@@ -3,7 +3,10 @@
 import os
 import ast
 import itertools
-from pkg_resources import resource_filename
+# from pkg_resources import resource_filename
+from contextlib import ExitStack
+import importlib.resources as importlib_resources # Replaces deprecated pkg_resources
+import atexit
 import zlib
 
 import click
@@ -64,9 +67,14 @@ class BenchmarkDataset(object):
         )  # Different seed for each name, otherwise two benchmarks with the same domain will always have the same X values
         self.rng = np.random.RandomState(seed)
 
+        # Set filemanger to ensure graceful handling of files and dirs.
+        self.file_manager = ExitStack()
+
         # Load benchmark data
         if root is None:
-            root = resource_filename("dso.task", "regression")
+            root_path = importlib_resources.files("dso.task") / "regression"
+            root = self.file_manager.enter_context(importlib_resources.as_file(root_path))
+
         benchmark_path = os.path.join(root, benchmark_source)
         benchmark_df = pd.read_csv(benchmark_path, index_col=0, encoding="ISO-8859-1")
         row = benchmark_df.loc[name]
@@ -138,7 +146,13 @@ class BenchmarkDataset(object):
         print(output_message)
         print(output_message)
 
+        self.file_manager.close()
+
     def extract_dataset_specs(self, specs):
+        # Prevents ast.literal_eval from raising exception
+        if specs is np.nan or None:
+            return None
+
         specs = ast.literal_eval(specs)
         if specs is not None:
             specs["distribution"] = list(list(specs.items())[0][1].items())[0][0]
@@ -328,11 +342,15 @@ class BenchmarkDataset(object):
 def main(benchmark_source, plot, save_csv, sweep):
     """Plots all benchmark expressions."""
 
-    regression_path = resource_filename("dso.task", "regression/")
+    regression_path = importlib_resources.file("dso.task") / "regression/"
+    regression_path = self.file_manager.enter_context(importlib_resources.as_file(regression_path))
     benchmark_path = os.path.join(regression_path, benchmark_source)
     save_dir = os.path.join(regression_path, "log")
     df = pd.read_csv(benchmark_path, encoding="ISO-8859-1")
     names = df["name"].to_list()
+
+    self.file_manager.close()
+
     for name in names:
 
         if (
