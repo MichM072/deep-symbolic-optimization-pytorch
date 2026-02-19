@@ -342,14 +342,16 @@ class BenchmarkDataset(object):
 def main(benchmark_source, plot, save_csv, sweep):
     """Plots all benchmark expressions."""
 
+    file_manager = ExitStack()
+
     regression_path = importlib_resources.file("dso.task") / "regression/"
-    regression_path = self.file_manager.enter_context(importlib_resources.as_file(regression_path))
+    regression_path = file_manager.enter_context(importlib_resources.as_file(regression_path))
     benchmark_path = os.path.join(regression_path, benchmark_source)
     save_dir = os.path.join(regression_path, "log")
     df = pd.read_csv(benchmark_path, encoding="ISO-8859-1")
     names = df["name"].to_list()
 
-    self.file_manager.close()
+    file_manager.close()
 
     for name in names:
 
