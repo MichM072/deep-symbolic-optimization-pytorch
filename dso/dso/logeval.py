@@ -182,18 +182,14 @@ class LogEval:
 
     def _apply_pareto_filter_new(self, df):
         """New implementation of pareto filter, sorts both complexity and reward and then iterates through the sorted DataFrame to filter the entries. This should improvie the speed of the pareto filter singificantly compared to iterrows."""
-        df = df.sort_values(by=["complexity", "r"], ascending=True)
-        r_values = df["r"].values
-        indices = df.index.values
-        filtered_indices = []
-        max_r = float("-inf")
 
-        for i in range(len(df)):
-            if r_values[i] > max_r:
-                filtered_indices.append(indices[i])
-                max_r = r_values[i]
+        # Sort by complexity and ensure that highest reward for each complexity is first.
+        df = df.sort_values(by=["complexity", "r"], ascending=[True, False])
 
-        filtered_df = df.loc[filtered_indices].reset_index(drop=True)
+        # Shift cumalitive max by 1 to compare reward of current row to max reward of all previous rows.
+        cummax = df['r'].cummax().shift(1, fill_value=-float('inf'))
+        mask = df['r'] > cummax
+        filtered_df = df[mask].reset_index(drop=True)
 
         # make sure that filtered_df has the same column types as the original df
         filtered_df = filtered_df.astype(df.dtypes.to_dict())
