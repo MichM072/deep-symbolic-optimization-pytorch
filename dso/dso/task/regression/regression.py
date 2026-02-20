@@ -122,8 +122,9 @@ class RegressionTask(HierarchicalTask):
             df = pd.read_csv(
                 dataset, header=None
             )  # Assuming data file does not have header rows
-            self.X_train = df.values[:, :-1]
-            self.y_train = df.values[:, -1]
+            # Added dtype specifications to ensure numpy does not infer object dtype.
+            self.X_train = df.iloc[:, :-1].to_numpy(dtype=np.float64)
+            self.y_train = df.iloc[:, -1].to_numpy(dtype=np.float64)
             self.name = dataset.replace("/", "_")[:-4]
 
         # Case 4: sklearn-like (X, y) data
