@@ -28,6 +28,19 @@ from dso.tf_state_manager import make_state_manager
 from dso.policy.policy import make_policy
 from dso.policy_optimizer import make_policy_optimizer
 
+def initialize_worker(config_task, complexity, const_optimizer, const_params):
+    """
+    Initializer for workers in the pool. Sets the Task and other global variables for each worker seperately.
+    This change is necessary due to the changed behavior of process spawning in Python 3.12+ which utilizes the clean "spawn" method by default. The old behavior of "fork" is not deemed safe, thus this change has been made.
+    """
+    from dso.task import set_task
+    from dso.program import Program
+
+    set_task(config_task)
+
+    Program.set_complexity(complexity)
+    Program.set_const_optimizer(const_optimizer, **const_params)
+
 
 class DeepSymbolicOptimizer:
     """
@@ -248,13 +261,13 @@ class DeepSymbolicOptimizer:
         # Set complexity and const optimizer here so pool can access them
         # Set the complexity function
         complexity = self.config_training["complexity"]
-        Program.set_complexity(complexity)
+        # Program.set_complexity(complexity)
 
         # Set the constant optimizer
         const_optimizer = self.config_training["const_optimizer"]
         const_params = self.config_training["const_params"]
         const_params = const_params if const_params is not None else {}
-        Program.set_const_optimizer(const_optimizer, **const_params)
+        # Program.set_const_optimizer(const_optimizer, **const_params)
 
         pool = None
         n_cores_batch = self.config_training.get("n_cores_batch")
@@ -263,7 +276,10 @@ class DeepSymbolicOptimizer:
                 n_cores_batch = cpu_count()
             if n_cores_batch > 1:
                 pool = Pool(
-                    n_cores_batch, initializer=set_task, initargs=(self.config_task,)
+                    # n_cores_batch, initializer=set_task, initargs=(self.config_task,)
+                    n_cores_batch, 
+                    initializer=initialize_worker, 
+                    initargs=(self.config_task, complexity, const_optimizer, const_params)
                 )
 
         # Set the Task for the parent process
