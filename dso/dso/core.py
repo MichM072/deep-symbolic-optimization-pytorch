@@ -281,6 +281,10 @@ class DeepSymbolicOptimizer:
                     initializer=initialize_worker, 
                     initargs=(self.config_task, complexity, const_optimizer, const_params)
                 )
+            if n_cores_batch == 1:
+                # Prevent missing attributes errors
+                Program.set_complexity(complexity)
+                Program.set_const_optimizer(const_optimizer, **const_params)
 
         # Set the Task for the parent process
         set_task(self.config_task)
