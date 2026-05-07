@@ -92,6 +92,7 @@ class GPController:
             Whether to print GP diagnostics.
         """
 
+        self.pool = None
         self.prior = prior
         self.config_prior = config_prior
         self.population_size = population_size
@@ -192,10 +193,12 @@ class GPController:
 
         # Overide the built-in map function
         if parallel_eval:
+            if self.pool is not None:
+                self.pool.terminate()
             print("GP Controller using parallel evaluation")
-            pool = Pool(cpu_count())
+            self.pool = Pool(cpu_count())
             print(f"\t>>> Using {cpu_count()} processes")
-            toolbox.register("cmap", pool.map)
+            toolbox.register("cmap", self.pool.map)
         else:
             toolbox.register("cmap", map)
 
@@ -334,4 +337,9 @@ class GPController:
         print()
 
     def __del__(self):
-        del self.creator.FitnessMin
+        # TODO: Stupid hack, should do something about this.
+        try:
+            del self.creator.FitnessMin
+            del self.creator.Individual
+        except (AttributeError, TypeError, ImportError):
+            pass
