@@ -30,7 +30,7 @@ from dso.policy_optimizer import make_policy_optimizer
 
 def initialize_worker(config_task, complexity, const_optimizer, const_params):
     """
-    Initializer for workers in the pool. Sets the Task and other global variables for each worker seperately.
+    Initializer for workers in the pool. Sets the Task and other global variables for each worker separately.
     This change is necessary due to the changed behavior of process spawning in Python 3.12+ which utilizes the clean "spawn" method by default. The old behavior of "fork" is not deemed safe, thus this change has been made.
     """
     from dso.task import set_task
@@ -281,10 +281,10 @@ class DeepSymbolicOptimizer:
                     initializer=initialize_worker, 
                     initargs=(self.config_task, complexity, const_optimizer, const_params)
                 )
-            if n_cores_batch == 1:
-                # Prevent missing attributes errors
-                Program.set_complexity(complexity)
-                Program.set_const_optimizer(const_optimizer, **const_params)
+
+        # Prevent missing attributes errors
+        Program.set_complexity(complexity)
+        Program.set_const_optimizer(const_optimizer, **const_params)
 
         # Set the Task for the parent process
         set_task(self.config_task)
