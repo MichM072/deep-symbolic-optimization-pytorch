@@ -22,6 +22,18 @@ mutation_ops_dict = {
     "multi_constrained_mutate": U.multi_constrained_mutate,
 }
 
+if not hasattr(creator, "FitnessMin"):
+    creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+
+if not hasattr(creator, "Individual"):
+    creator.create(
+        "Individual",
+        U.Individual,
+        fitness=creator.FitnessMin,
+        num_mutations=0,
+        max_mutations=None, # Dynamic property handling moved to instances
+    )
+
 
 class GPController:
 
@@ -131,7 +143,8 @@ class GPController:
             self.hof = tools.HallOfFame(maxsize=self.train_n)
 
         # Create a DEAP toolbox
-        self.toolbox, self.creator = self._create_toolbox(
+        self.creator = creator
+        self.toolbox = self._create_toolbox(
             self.pset,
             parallel_eval=parallel_eval,
             tournament_size=tournament_size,
@@ -162,14 +175,14 @@ class GPController:
         # ALSO: Creates a new class named *name* inheriting from *base*
 
         # Create custom fitness and individual classes
-        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-        creator.create(
-            "Individual",
-            U.Individual,
-            fitness=creator.FitnessMin,  # Adds fitness into PrimitiveTree
-            num_mutations=0,
-            max_mutations=self.max_mutations,
-        )
+        # creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+        # creator.create(
+        #     "Individual",
+        #     U.Individual,
+        #     fitness=creator.FitnessMin,  # Adds fitness into PrimitiveTree
+        #     num_mutations=0,
+        #     max_mutations=self.max_mutations,
+        # )
 
         # NOTE from deap.base.Toolbox:  def register(self, alias, function, *args, **kargs):
         # ALSO the function in toolbox is defined as: partial(function, *args, **kargs)
@@ -203,7 +216,7 @@ class GPController:
             toolbox.register("cmap", map)
 
         # Create the training function
-        return toolbox, creator
+        return toolbox
 
     def get_hof_programs(self):
         """Compute actions, parents, siblings, and priors of hall of fame."""
@@ -338,8 +351,8 @@ class GPController:
 
     def __del__(self):
         # TODO: Stupid hack, should do something about this.
-        try:
-            del self.creator.FitnessMin
-            del self.creator.Individual
-        except (AttributeError, TypeError, ImportError):
-            pass
+        if self.pool is not None:
+            try:
+                self.pool.terminate()
+            except Exception:
+                pass
