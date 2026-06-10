@@ -45,6 +45,7 @@ class GPController:
         generations=20,
         crossover_operator="cxOnePoint",
         p_crossover=0.5,
+        pool=None,
         mutation_operator="multi_mutate",
         p_mutate=0.5,
         tournament_size=5,
@@ -104,7 +105,7 @@ class GPController:
             Whether to print GP diagnostics.
         """
 
-        self.pool = None
+        self.pool = pool
         self.prior = prior
         self.config_prior = config_prior
         self.population_size = population_size
@@ -146,7 +147,7 @@ class GPController:
         self.creator = creator
         self.toolbox = self._create_toolbox(
             self.pset,
-            parallel_eval=parallel_eval,
+            parallel_eval=(self.pool is not None),
             tournament_size=tournament_size,
             mutate_tree_max=mutate_tree_max,
         )
@@ -205,13 +206,16 @@ class GPController:
         )
 
         # Overide the built-in map function
-        if parallel_eval:
-            if self.pool is not None:
-                self.pool.terminate()
-            print("GP Controller using parallel evaluation")
-            self.pool = Pool(cpu_count())
-            print(f"\t>>> Using {cpu_count()} processes")
+
+        if parallel_eval and self.pool is not None:
             toolbox.register("cmap", self.pool.map)
+        # if parallel_eval:
+        #     if self.pool is not None:
+        #         self.pool.terminate()
+        #     print("GP Controller using parallel evaluation")
+        #     self.pool = Pool(cpu_count())
+        #     print(f"\t>>> Using {cpu_count()} processes")
+        #     toolbox.register("cmap", self.pool.map)
         else:
             toolbox.register("cmap", map)
 

@@ -249,7 +249,7 @@ class DeepSymbolicOptimizer:
             from dso.gp.gp_controller import GPController
 
             gp_controller = GPController(
-                self.prior, self.config_prior, **self.config_gp_meld
+                self.prior, self.config_prior, pool=self.pool, **self.config_gp_meld
             )
         else:
             gp_controller = None
