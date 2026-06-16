@@ -245,7 +245,7 @@ def import_custom_source(import_source):
     """
 
     # Partially validates if the import_source is in correct format
-    regex = "[\w._]+:[\w._]+"  # lib_name:class_name
+    regex = r"[\w._\-]+:[\w._\-]+"  # lib_name:class_name
     m = re.match(pattern=regex, string=import_source)
     # Partial matches mean that the import will fail
     assert m is not None and m.end() == len(import_source), (
