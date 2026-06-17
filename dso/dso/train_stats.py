@@ -4,7 +4,7 @@ import os
 import numpy as np
 from datetime import datetime
 import pandas as pd
-from dso.program import Program, from_tokens
+from dso.program import Program, from_tokens, build_tree
 from dso.utils import is_pareto_efficient, empirical_entropy
 from itertools import compress
 from io import StringIO, BytesIO
@@ -19,23 +19,29 @@ except ImportError:
 
 # These functions are defined globally so they are pickleable and can be used by Pool.map
 def hof_work(p):
+    trav = p.traversal.copy()
+    tree = build_tree(trav)
+    tree = tree.__repr__()
     return [
         p.r,
         p.on_policy_count,
         p.off_policy_count,
-        repr(p.sympy_expr),
+        tree,
         repr(p),
         p.evaluate,
     ]
 
 
 def pf_work(p):
+    trav = p.traversal.copy()
+    tree = build_tree(trav)
+    tree = tree.__repr__()
     return [
         p.complexity,
         p.r,
         p.on_policy_count,
         p.off_policy_count,
-        repr(p.sympy_expr),
+        tree,
         repr(p),
         p.evaluate,
     ]
